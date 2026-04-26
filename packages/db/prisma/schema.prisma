@@ -1,0 +1,479 @@
+// ============================================
+// ABC Express AIP — Prisma Schema
+// PostgreSQL database model for ontology layer
+// ============================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---- Users & Auth ----
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  passwordHash  String
+  name          String
+  role          UserRole
+  branchId      String?
+  branch        Branch?   @relation(fields: [branchId], references: [id])
+  isActive      Boolean   @default(true)
+  lastLoginAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  decisions         Decision[]   @relation("DecidedBy")
+  authoredProposals Proposal[]   @relation("AuthoredProposals")
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  OPS_MANAGER
+  FINANCE_MANAGER
+  DISPATCHER
+  BRANCH_STAFF
+  VIEWER
+}
+
+// ---- Branches ----
+
+model Branch {
+  id          String     @id @default(uuid())
+  code        String     @unique
+  name        String
+  city        String
+  province    String
+  region      String
+  type        BranchType
+  address     String
+  phone       String?
+  email       String?
+  latitude    Float?
+  longitude   Float?
+  capacity    Int        @default(1000) // max shipments per day
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  users              User[]
+  vehicles           Vehicle[]
+  originShipments    Shipment[]      @relation("OriginBranch")
+  destShipments      Shipment[]      @relation("DestBranch")
+  currentShipments   Shipment[]      @relation("CurrentBranch")
+  originRoutes       Route[]         @relation("RouteOrigin")
+  destRoutes         Route[]         @relation("RouteDest")
+  shipmentEvents     ShipmentEvent[]
+
+  @@index([city])
+  @@index([region])
+  @@index([type])
+  @@map("branches")
+}
+
+enum BranchType {
+  HUB
+  BRANCH
+  AGENT
+  WAREHOUSE
+  PORT
+}
+
+// ---- Clients ----
+
+model Client {
+  id                 String     @id @default(uuid())
+  code               String     @unique
+  name               String
+  type               ClientType
+  companyName        String?
+  email              String?
+  phone              String
+  address            String
+  city               String
+  province           String
+  npwp               String?    // Indonesian tax ID
+  creditLimit        Float      @default(0)
+  outstandingBalance Float      @default(0)
+  isActive           Boolean    @default(true)
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  shipments          Shipment[]
+  invoices           Invoice[]
+
+  @@index([name])
+  @@index([type])
+  @@index([city])
+  @@map("clients")
+}
+
+enum ClientType {
+  INDIVIDUAL
+  CORPORATE
+  GOVERNMENT
+}
+
+// ---- Vehicles ----
+
+model Vehicle {
+  id                  String        @id @default(uuid())
+  plateNumber         String        @unique
+  type                VehicleType
+  brand               String?
+  model               String?
+  year                Int?
+  capacityKg          Float
+  capacityM3          Float
+  status              VehicleStatus @default(AVAILABLE)
+  currentBranchId     String?
+  currentBranch       Branch?       @relation(fields: [currentBranchId], references: [id])
+  driverName          String?
+  driverPhone         String?
+  lastMaintenanceDate DateTime?
+  isActive            Boolean       @default(true)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  shipments           Shipment[]
+
+  @@index([status])
+  @@index([type])
+  @@index([currentBranchId])
+  @@map("vehicles")
+}
+
+enum VehicleType {
+  TRUCK_SMALL
+  TRUCK_MEDIUM
+  TRUCK_LARGE
+  TRAILER
+  CONTAINER
+  SHIP
+  PLANE
+}
+
+enum VehicleStatus {
+  AVAILABLE
+  IN_TRANSIT
+  MAINTENANCE
+  LOADING
+  UNLOADING
+  OUT_OF_SERVICE
+}
+
+// ---- Routes ----
+
+model Route {
+  id                  String        @id @default(uuid())
+  code                String        @unique
+  originBranchId      String
+  originBranch        Branch        @relation("RouteOrigin", fields: [originBranchId], references: [id])
+  destinationBranchId String
+  destinationBranch   Branch        @relation("RouteDest", fields: [destinationBranchId], references: [id])
+  mode                TransportMode
+  distanceKm          Float
+  estimatedHours      Float
+  baseCostPerKg       Float
+  isActive            Boolean       @default(true)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  shipments           Shipment[]
+
+  @@unique([originBranchId, destinationBranchId, mode])
+  @@index([mode])
+  @@map("routes")
+}
+
+enum TransportMode {
+  ROAD
+  SEA
+  AIR
+  RAIL
+  MULTIMODAL
+}
+
+// ---- Shipments (Core Entity) ----
+
+model Shipment {
+  id                    String         @id @default(uuid())
+  connoteNumber         String         @unique
+  clientId              String
+  client                Client         @relation(fields: [clientId], references: [id])
+  originBranchId        String
+  originBranch          Branch         @relation("OriginBranch", fields: [originBranchId], references: [id])
+  destinationBranchId   String
+  destinationBranch     Branch         @relation("DestBranch", fields: [destinationBranchId], references: [id])
+  currentBranchId       String?
+  currentBranch         Branch?        @relation("CurrentBranch", fields: [currentBranchId], references: [id])
+  routeId               String?
+  route                 Route?         @relation(fields: [routeId], references: [id])
+  vehicleId             String?
+  vehicle               Vehicle?       @relation(fields: [vehicleId], references: [id])
+  serviceType           ServiceType
+  status                ShipmentStatus @default(DRAFT)
+  description           String
+  weightKg              Float
+  volumeM3              Float?
+  lengthCm              Float?
+  widthCm               Float?
+  heightCm              Float?
+  pieces                Int            @default(1)
+  declaredValue         Float?
+  isInsured             Boolean        @default(false)
+  senderName            String
+  senderPhone           String
+  senderAddress         String
+  receiverName          String
+  receiverPhone         String
+  receiverAddress       String
+  estimatedDeliveryDate DateTime?
+  actualDeliveryDate    DateTime?
+  specialInstructions   String?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  events                ShipmentEvent[]
+  invoices              Invoice[]
+  costEntries           CostEntry[]
+  decisions             Decision[]     @relation("ShipmentDecisions")
+
+  @@index([connoteNumber])
+  @@index([status])
+  @@index([serviceType])
+  @@index([clientId])
+  @@index([originBranchId])
+  @@index([destinationBranchId])
+  @@index([currentBranchId])
+  @@index([createdAt])
+  @@map("shipments")
+}
+
+enum ServiceType {
+  CARGO
+  PROJECT_CARGO
+  VEHICLE_HEAVY_EQUIPMENT
+  EXPORT
+  IMPORT
+}
+
+enum ShipmentStatus {
+  DRAFT
+  BOOKED
+  PICKED_UP
+  IN_TRANSIT
+  AT_HUB
+  OUT_FOR_DELIVERY
+  DELIVERED
+  RETURNED
+  CANCELLED
+  ON_HOLD
+  EXCEPTION
+}
+
+// ---- Shipment Events (Tracking) ----
+
+model ShipmentEvent {
+  id          String            @id @default(uuid())
+  shipmentId  String
+  shipment    Shipment          @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  type        ShipmentEventType
+  branchId    String?
+  branch      Branch?           @relation(fields: [branchId], references: [id])
+  description String
+  notes       String?
+  createdBy   String?
+  timestamp   DateTime          @default(now())
+
+  @@index([shipmentId])
+  @@index([type])
+  @@index([timestamp])
+  @@map("shipment_events")
+}
+
+enum ShipmentEventType {
+  CREATED
+  PICKED_UP
+  ARRIVED_AT_HUB
+  DEPARTED_HUB
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERED
+  EXCEPTION
+  ON_HOLD
+  RETURNED
+  NOTE_ADDED
+}
+
+// ---- Invoices ----
+
+model Invoice {
+  id            String        @id @default(uuid())
+  invoiceNumber String        @unique
+  shipmentId    String
+  shipment      Shipment      @relation(fields: [shipmentId], references: [id])
+  clientId      String
+  client        Client        @relation(fields: [clientId], references: [id])
+  subtotal      Float
+  taxAmount     Float
+  totalAmount   Float
+  status        InvoiceStatus @default(DRAFT)
+  issuedDate    DateTime      @default(now())
+  dueDate       DateTime
+  paidDate      DateTime?
+  paidAmount    Float         @default(0)
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([invoiceNumber])
+  @@index([status])
+  @@index([clientId])
+  @@index([dueDate])
+  @@map("invoices")
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  PARTIAL
+  OVERDUE
+  CANCELLED
+}
+
+// ---- Cost Entries ----
+
+model CostEntry {
+  id            String       @id @default(uuid())
+  shipmentId    String
+  shipment      Shipment     @relation(fields: [shipmentId], references: [id])
+  category      CostCategory
+  amount        Float
+  description   String
+  vendorName    String?
+  receiptNumber String?
+  incurredDate  DateTime     @default(now())
+  createdAt     DateTime     @default(now())
+
+  @@index([shipmentId])
+  @@index([category])
+  @@index([incurredDate])
+  @@map("cost_entries")
+}
+
+enum CostCategory {
+  FUEL
+  LABOR
+  VEHICLE_MAINTENANCE
+  TOLL
+  PORT_FEES
+  CUSTOMS
+  INSURANCE
+  PACKAGING
+  STORAGE
+  OVERHEAD
+  OTHER
+}
+
+// ---- Proposals (pre-decision) → merge into Decision (1:1 via Decision.proposalId) ----
+
+enum ProposalStatus {
+  DRAFT
+  SUBMITTED
+  MERGED
+  REJECTED
+  CANCELLED
+}
+
+model Proposal {
+  id                 String         @id @default(uuid())
+  type               DecisionType
+  /** Target domain object, e.g. Shipment, Route, Invoice — no DB FK (entityId is opaque). */
+  entityType         String
+  entityId           String
+  proposedPayload    Json
+  rationale          String         @db.Text
+  confidence         Float
+  modelInputSnapshot Json?
+  status             ProposalStatus @default(DRAFT)
+  /** Origin of the proposal, e.g. llm, rule, analyst */
+  source             String?
+  createdById        String?
+  createdBy          User?          @relation("AuthoredProposals", fields: [createdById], references: [id])
+  mergedAt           DateTime?
+  rejectReason       String?        @db.Text
+  mergedDecision     Decision?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  @@index([type])
+  @@index([entityType, entityId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([createdById])
+  @@map("proposals")
+}
+
+// ---- AI Decisions (Human-in-the-Loop) ----
+
+model Decision {
+  id                 String         @id @default(uuid())
+  type               DecisionType
+  entityType         String         // e.g., "Shipment", "Route", "Invoice"
+  entityId           String
+  shipment           Shipment?      @relation("ShipmentDecisions", fields: [entityId], references: [id], map: "decisions_shipment_fk")
+  /** When set, this decision was created from a merged proposal (1:1). */
+  proposalId         String?        @unique
+  proposal           Proposal?      @relation(fields: [proposalId], references: [id])
+  aiRecommendation   Json
+  aiConfidence       Float
+  aiReasoning        String
+  humanDecision      Json?
+  humanReasoning     String?
+  decidedById        String?
+  decidedBy          User?          @relation("DecidedBy", fields: [decidedById], references: [id])
+  decidedAt          DateTime?
+  modelInputSnapshot Json?
+  executionError     String?        @db.Text
+  outcomeSnapshot    Json?
+  outcomeEvaluatedAt DateTime?
+  status             DecisionStatus @default(PENDING)
+  executedAt         DateTime?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  @@index([type])
+  @@index([entityType, entityId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([decidedAt])
+  @@map("decisions")
+}
+
+enum DecisionType {
+  SHIPMENT_ROUTING
+  PRICING
+  DISPATCH
+  ESCALATION
+  COST_OPTIMIZATION
+  CAPACITY_PLANNING
+}
+
+enum DecisionStatus {
+  PENDING
+  AI_RECOMMENDED
+  HUMAN_APPROVED
+  HUMAN_OVERRIDDEN
+  EXECUTED
+  REJECTED
+}

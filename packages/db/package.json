@@ -1,0 +1,30 @@
+{
+  "name": "@abc/db",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+"scripts": {
+    "generate": "sh -c '. ../../.env && prisma generate --schema ./prisma/schema.prisma'",
+    "push": "sh -c '. ../../.env && prisma db push --schema ./prisma/schema.prisma --skip-generate'",
+    "seed": "sh -c '. ../../.env && tsx src/seed/index.ts'",
+    "studio": "prisma studio",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@abc/shared": "workspace:*",
+    "@prisma/client": "^6.0.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.6",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.0",
+    "helmet": "^8.1.0",
+    "jose": "^5.2.4"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "prisma": "^6.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

@@ -1,0 +1,110 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-brand: 37 99 235;
+    --color-accent: 249 115 22;
+  }
+
+  html {
+    @apply antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  body {
+    @apply bg-surface-50 text-surface-900;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    @apply w-1.5 h-1.5;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-surface-300 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-surface-400;
+  }
+
+  /* Focus ring */
+  *:focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand-500;
+  }
+}
+
+@layer components {
+  /* Status dot — animated */
+  .status-dot {
+    @apply inline-block w-2 h-2 rounded-full;
+  }
+  .status-dot--active {
+    @apply bg-success-500 animate-pulse-dot;
+  }
+  .status-dot--warning {
+    @apply bg-warning-500 animate-pulse-dot;
+  }
+  .status-dot--danger {
+    @apply bg-danger-500;
+  }
+  .status-dot--idle {
+    @apply bg-surface-400;
+  }
+
+  /* KPI card glow */
+  .kpi-card {
+    @apply relative overflow-hidden rounded-xl border border-surface-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md;
+  }
+  .kpi-card::before {
+    content: '';
+    @apply absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-brand-500 to-accent-500;
+  }
+
+  /* Sidebar link */
+  .sidebar-link {
+    @apply flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-surface-600 transition-colors hover:bg-surface-100 hover:text-surface-900;
+  }
+  .sidebar-link--active {
+    @apply bg-brand-50 text-brand-700 hover:bg-brand-100;
+  }
+
+  /* Data table */
+  .data-table {
+    @apply w-full text-sm;
+  }
+  .data-table thead {
+    @apply border-b border-surface-200;
+  }
+  .data-table th {
+    @apply px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-surface-500;
+  }
+  .data-table td {
+    @apply px-4 py-3 text-surface-700;
+  }
+  .data-table tbody tr {
+    @apply border-b border-surface-100 transition-colors hover:bg-surface-50;
+  }
+
+  /* Badge */
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  /* Skeleton loader */
+  .skeleton {
+    @apply animate-pulse rounded bg-surface-200;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-gradient-to-r from-brand-600 to-accent-500 bg-clip-text text-transparent;
+  }
+  .glass {
+    @apply bg-white/80 backdrop-blur-sm;
+  }
+}

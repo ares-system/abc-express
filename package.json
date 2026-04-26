@@ -1,0 +1,33 @@
+{
+  "name": "abc-express-aip",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ABC Express AI Integrated Platform — Custom ERP with Ontology Layer and Agentic AI",
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:ai": "cd apps/ai && python run.py",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "db:generate": "pnpm --filter @abc/db generate",
+    "db:migrate": "pnpm --filter @abc/db migrate",
+    "db:seed": "pnpm --filter @abc/db seed",
+    "db:studio": "pnpm --filter @abc/db studio",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "setup": "pnpm install && pnpm --filter @abc/api build && pnpm --filter @abc/web build",
+    "start": "turbo run start"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "prettier": "^3.4.0",
+    "turbo": "^2.3.0",
+    "typescript": "^5.6.0"
+  },
+  "packageManager": "pnpm@9.14.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "name": "@abc/deep-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "dev": "tsc --watch",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@langchain/anthropic": "^1.3.27",
+    "@langchain/core": "^1.1.41",
+    "deepagents": "^1.9.0",
+    "langchain": "^1.3.4",
+    "langsmith": "^0.5.15",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0"
+  }
+}

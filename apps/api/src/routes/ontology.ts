@@ -9,6 +9,9 @@ import { validateBody } from '../middleware/validate.js';
 import { z } from 'zod';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { invokeOntologyFunction } from '../services/ontologyFunctionHandlers.js';
+import { prisma } from '@abc/db';
+import { detectIntercoTransactions, eliminateIntercoTransactions } from '../jobs/ictElimination.js';
+import { computeBranchPLs } from '../jobs/branchPLComputation.js';
 
 const router = Router();
 
@@ -75,5 +78,70 @@ router.post(
     }
   }
 );
+
+// ─── Financial Ontology Phase 1 Endpoints ────────────────
+
+/**
+ * GET /api/ontology/branch-pl
+ * List computed Branch P&L records
+ */
+router.get('/branch-pl', authenticate, authorize('ADMIN', 'FINANCE_MANAGER', 'COO'), async (req, res, next) => {
+  try {
+    const branchPls = await prisma.branchPL.findMany({
+      include: { branch: { select: { name: true, code: true, region: true } } },
+      orderBy: [{ periodValue: 'desc' }, { branch: { name: 'asc' } }],
+    });
+    sendSuccess(res, { branchPls });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /api/ontology/branch-pl/compute
+ * Trigger P&L computation
+ */
+router.post('/branch-pl/compute', authenticate, authorize('ADMIN', 'FINANCE_MANAGER'), async (_req, res, next) => {
+  try {
+    await computeBranchPLs();
+    sendSuccess(res, null, 200, 'Branch P&L computation triggered successfully');
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /api/ontology/ict
+ * List Intercompany Transactions
+ */
+router.get('/ict', authenticate, authorize('ADMIN', 'FINANCE_MANAGER', 'COO'), async (req, res, next) => {
+  try {
+    const status = req.query.status ? String(req.query.status) : undefined;
+    const where = status ? { status: status as any } : {};
+    
+    const icts = await prisma.intercoTransaction.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+    sendSuccess(res, { icts });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /api/ontology/ict/run-engine
+ * Run detection and semi-auto elimination
+ */
+router.post('/ict/run-engine', authenticate, authorize('ADMIN', 'FINANCE_MANAGER'), async (_req, res, next) => {
+  try {
+    await detectIntercoTransactions();
+    await eliminateIntercoTransactions();
+    sendSuccess(res, null, 200, 'ICT Engine completed execution');
+  } catch (err) {
+    next(err);
+  }
+});
 
 export default router;

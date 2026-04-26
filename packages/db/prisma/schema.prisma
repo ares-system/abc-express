@@ -15,20 +15,20 @@ datasource db {
 // ---- Users & Auth ----
 
 model User {
-  id            String    @id @default(uuid())
-  email         String    @unique
-  passwordHash  String
-  name          String
-  role          UserRole
-  branchId      String?
-  branch        Branch?   @relation(fields: [branchId], references: [id])
-  isActive      Boolean   @default(true)
-  lastLoginAt   DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  role         UserRole
+  branchId     String?
+  branch       Branch?   @relation(fields: [branchId], references: [id])
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-  decisions         Decision[]   @relation("DecidedBy")
-  authoredProposals Proposal[]   @relation("AuthoredProposals")
+  decisions         Decision[] @relation("DecidedBy")
+  authoredProposals Proposal[] @relation("AuthoredProposals")
 
   @@index([email])
   @@index([role])
@@ -47,31 +47,34 @@ enum UserRole {
 // ---- Branches ----
 
 model Branch {
-  id          String     @id @default(uuid())
-  code        String     @unique
-  name        String
-  city        String
-  province    String
-  region      String
-  type        BranchType
-  address     String
-  phone       String?
-  email       String?
-  latitude    Float?
-  longitude   Float?
-  capacity    Int        @default(1000) // max shipments per day
-  isActive    Boolean    @default(true)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id        String     @id @default(uuid())
+  code      String     @unique
+  name      String
+  city      String
+  province  String
+  region    String
+  type      BranchType
+  address   String
+  phone     String?
+  email     String?
+  latitude  Float?
+  longitude Float?
+  capacity  Int        @default(1000) // max shipments per day
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 
-  users              User[]
-  vehicles           Vehicle[]
-  originShipments    Shipment[]      @relation("OriginBranch")
-  destShipments      Shipment[]      @relation("DestBranch")
-  currentShipments   Shipment[]      @relation("CurrentBranch")
-  originRoutes       Route[]         @relation("RouteOrigin")
-  destRoutes         Route[]         @relation("RouteDest")
-  shipmentEvents     ShipmentEvent[]
+  users            User[]
+  vehicles         Vehicle[]
+  originShipments  Shipment[]      @relation("OriginBranch")
+  destShipments    Shipment[]      @relation("DestBranch")
+  currentShipments Shipment[]      @relation("CurrentBranch")
+  legalEntityId    String?
+  legalEntity      LegalEntity?    @relation(fields: [legalEntityId], references: [id])
+  branchPLs        BranchPL[]
+  originRoutes     Route[]         @relation("RouteOrigin")
+  destRoutes       Route[]         @relation("RouteDest")
+  shipmentEvents   ShipmentEvent[]
 
   @@index([city])
   @@index([region])
@@ -100,15 +103,15 @@ model Client {
   address            String
   city               String
   province           String
-  npwp               String?    // Indonesian tax ID
+  npwp               String? // Indonesian tax ID
   creditLimit        Float      @default(0)
   outstandingBalance Float      @default(0)
   isActive           Boolean    @default(true)
   createdAt          DateTime   @default(now())
   updatedAt          DateTime   @updatedAt
 
-  shipments          Shipment[]
-  invoices           Invoice[]
+  shipments Shipment[]
+  invoices  Invoice[]
 
   @@index([name])
   @@index([type])
@@ -143,7 +146,7 @@ model Vehicle {
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
 
-  shipments           Shipment[]
+  shipments Shipment[]
 
   @@index([status])
   @@index([type])
@@ -187,7 +190,7 @@ model Route {
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
 
-  shipments           Shipment[]
+  shipments Shipment[]
 
   @@unique([originBranchId, destinationBranchId, mode])
   @@index([mode])
@@ -210,6 +213,8 @@ model Shipment {
   clientId              String
   client                Client         @relation(fields: [clientId], references: [id])
   originBranchId        String
+  legalEntityId         String? // Added for ICT elimination
+  legalEntity           LegalEntity?   @relation(fields: [legalEntityId], references: [id])
   originBranch          Branch         @relation("OriginBranch", fields: [originBranchId], references: [id])
   destinationBranchId   String
   destinationBranch     Branch         @relation("DestBranch", fields: [destinationBranchId], references: [id])
@@ -242,10 +247,10 @@ model Shipment {
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
 
-  events                ShipmentEvent[]
-  invoices              Invoice[]
-  costEntries           CostEntry[]
-  decisions             Decision[]     @relation("ShipmentDecisions")
+  events      ShipmentEvent[]
+  invoices    Invoice[]
+  costEntries CostEntry[]
+  decisions   Decision[]      @relation("ShipmentDecisions")
 
   @@index([connoteNumber])
   @@index([status])
@@ -320,6 +325,8 @@ model Invoice {
   id            String        @id @default(uuid())
   invoiceNumber String        @unique
   shipmentId    String
+  legalEntityId String? // the entity issuing the invoice
+  legalEntity   LegalEntity?  @relation(fields: [legalEntityId], references: [id])
   shipment      Shipment      @relation(fields: [shipmentId], references: [id])
   clientId      String
   client        Client        @relation(fields: [clientId], references: [id])
@@ -358,6 +365,9 @@ model CostEntry {
   shipmentId    String
   shipment      Shipment     @relation(fields: [shipmentId], references: [id])
   category      CostCategory
+  legalEntityId String? // the entity booking the cost
+  legalEntity   LegalEntity? @relation(fields: [legalEntityId], references: [id])
+  costCenterId  String? // mapped to branch or region
   amount        Float
   description   String
   vendorName    String?
@@ -398,7 +408,9 @@ enum ProposalStatus {
 model Proposal {
   id                 String         @id @default(uuid())
   type               DecisionType
-  /** Target domain object, e.g. Shipment, Route, Invoice — no DB FK (entityId is opaque). */
+  /**
+   * Target domain object, e.g. Shipment, Route, Invoice — no DB FK (entityId is opaque).
+   */
   entityType         String
   entityId           String
   proposedPayload    Json
@@ -406,7 +418,9 @@ model Proposal {
   confidence         Float
   modelInputSnapshot Json?
   status             ProposalStatus @default(DRAFT)
-  /** Origin of the proposal, e.g. llm, rule, analyst */
+  /**
+   * Origin of the proposal, e.g. llm, rule, analyst
+   */
   source             String?
   createdById        String?
   createdBy          User?          @relation("AuthoredProposals", fields: [createdById], references: [id])
@@ -429,10 +443,12 @@ model Proposal {
 model Decision {
   id                 String         @id @default(uuid())
   type               DecisionType
-  entityType         String         // e.g., "Shipment", "Route", "Invoice"
+  entityType         String // e.g., "Shipment", "Route", "Invoice"
   entityId           String
   shipment           Shipment?      @relation("ShipmentDecisions", fields: [entityId], references: [id], map: "decisions_shipment_fk")
-  /** When set, this decision was created from a merged proposal (1:1). */
+  /**
+   * When set, this decision was created from a merged proposal (1:1).
+   */
   proposalId         String?        @unique
   proposal           Proposal?      @relation(fields: [proposalId], references: [id])
   aiRecommendation   Json
@@ -477,4 +493,92 @@ enum DecisionStatus {
   HUMAN_OVERRIDDEN
   EXECUTED
   REJECTED
+}
+
+// ---- Legal Entity ----
+model LegalEntity {
+  id          String      @id @default(uuid())
+  name        String      @unique
+  code        String      @unique
+  taxId       String?
+  branches    Branch[]
+  shipments   Shipment[]
+  invoices    Invoice[]
+  costEntries CostEntry[]
+
+  @@map("legal_entities")
+}
+
+// ---- Transfer Pricing ----
+enum PricingBasis {
+  COST_PLUS
+  MARKET_BASED
+  NEGOTIATED
+}
+
+model TransferPricingActivity {
+  id            String       @id @default(uuid())
+  activityCode  String       @unique // e.g. A1, A2
+  description   String
+  pricingBasis  PricingBasis
+  oecdCompliant Boolean      @default(true)
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+
+  @@map("transfer_pricing_activities")
+}
+
+// ---- Interco Transaction (ICT) ----
+enum IctStatus {
+  PENDING
+  ELIMINATED
+  REVIEWED
+}
+
+model IntercoTransaction {
+  id             String    @id @default(uuid())
+  sourceEntityId String
+  targetEntityId String
+  amount         Float
+  shipmentId     String?
+  status         IctStatus @default(PENDING)
+  matchedIctId   String?   @unique // The corresponding ICT on the other entity's books
+  eliminatedById String?
+  eliminatedAt   DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@map("interco_transactions")
+}
+
+// ---- Branch P&L ----
+enum PlPeriodType {
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+enum PlStatus {
+  DRAFT
+  LOCKED
+  AUDITED
+}
+
+model BranchPL {
+  id          String       @id @default(uuid())
+  branchId    String
+  branch      Branch       @relation(fields: [branchId], references: [id])
+  periodType  PlPeriodType
+  periodValue String // e.g. "2026-07" or "2026-Q3"
+  revenue     Float
+  cost        Float
+  grossMargin Float
+  status      PlStatus     @default(DRAFT)
+  lockedById  String?
+  lockedAt    DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@unique([branchId, periodType, periodValue])
+  @@map("branch_pl")
 }

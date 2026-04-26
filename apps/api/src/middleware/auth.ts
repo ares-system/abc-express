@@ -94,7 +94,7 @@ export const optionalAuth = (req: Request, _res: Response, next: NextFunction): 
  */
 export const generateToken = (payload: JwtPayload): string => {
   return jwt.sign(payload, config.jwt.secret, {
-    expiresIn: config.jwt.expiresIn,
+    expiresIn: config.jwt.expiresIn as any,
   });
 };
 
@@ -103,6 +103,6 @@ export const generateToken = (payload: JwtPayload): string => {
  */
 export const generateRefreshToken = (payload: JwtPayload): string => {
   return jwt.sign(payload, config.jwt.secret, {
-    expiresIn: config.jwt.refreshExpiresIn,
+    expiresIn: config.jwt.refreshExpiresIn as any,
   });
 };

@@ -13,7 +13,22 @@ import { sendSuccess, sendCreated, sendNotFound, sendError } from '../utils/resp
 import { parsePagination, buildPaginationMeta, parseSort } from '../utils/pagination.js';
 import { executeDecision, refreshDecisionOutcomeSnapshot } from '../services/decisionExecution.js';
 
+import { runLoadConsolidationAnalysis } from '../jobs/loadConsolidation.js';
+
 const router = Router();
+
+/**
+ * POST /api/decisions/trigger-consolidation
+ * Run the load consolidation AI logic manually for testing
+ */
+router.post('/trigger-consolidation', authenticate, authorize('ADMIN', 'OPS_MANAGER'), async (req, res, next) => {
+  try {
+    const decisions = await runLoadConsolidationAnalysis();
+    sendSuccess(res, { generated: decisions.length, decisions }, 201, 'Consolidation analysis completed');
+  } catch (err) {
+    next(err);
+  }
+});
 
 const SORT_FIELDS = ['type', 'status', 'aiConfidence', 'createdAt'];
 
@@ -167,7 +182,7 @@ router.post('/', authenticate, authorize('ADMIN', 'OPS_MANAGER'), validateBody(c
     };
     const decision = await prisma.decision.create({
       data: {
-        type: body.type as 'SHIPMENT_ROUTING' | 'PRICING' | 'DISPATCH' | 'ESCALATION' | 'COST_OPTIMIZATION' | 'CAPACITY_PLANNING',
+        type: body.type as 'SHIPMENT_ROUTING' | 'PRICING' | 'DISPATCH' | 'ESCALATION' | 'COST_OPTIMIZATION' | 'CAPACITY_PLANNING' | 'LOAD_CONSOLIDATION',
         entityType: body.entityType,
         entityId: body.entityId,
         aiRecommendation: body.aiRecommendation as Prisma.InputJsonValue,

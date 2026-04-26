@@ -63,7 +63,7 @@ router.get('/', authenticate, authorize('ADMIN', 'FINANCE_MANAGER', 'OPS_MANAGER
 router.get('/:id', authenticate, authorize('ADMIN', 'FINANCE_MANAGER', 'OPS_MANAGER'), async (req, res, next) => {
   try {
     const cost = await prisma.costEntry.findUnique({
-      where: { id: req.params.id },
+      where: { id: req.params.id as string },
       include: {
         shipment: {
           select: {
@@ -114,7 +114,7 @@ router.post('/', authenticate, authorize('ADMIN', 'FINANCE_MANAGER', 'OPS_MANAGE
 router.put('/:id', authenticate, authorize('ADMIN', 'FINANCE_MANAGER'), async (req, res, next) => {
   try {
     const cost = await prisma.costEntry.update({
-      where: { id: req.params.id },
+      where: { id: req.params.id as string },
       data: req.body,
     });
     sendSuccess(res, cost, 200, 'Cost entry updated');
@@ -128,7 +128,7 @@ router.put('/:id', authenticate, authorize('ADMIN', 'FINANCE_MANAGER'), async (r
  */
 router.delete('/:id', authenticate, authorize('ADMIN', 'FINANCE_MANAGER'), async (req, res, next) => {
   try {
-    await prisma.costEntry.delete({ where: { id: req.params.id } });
+    await prisma.costEntry.delete({ where: { id: req.params.id as string } });
     sendSuccess(res, null, 200, 'Cost entry deleted');
   } catch (err) {
     next(err);

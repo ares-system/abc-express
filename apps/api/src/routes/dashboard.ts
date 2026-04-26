@@ -266,10 +266,10 @@ router.get('/branches', authenticate, authorize('ADMIN', 'OPS_MANAGER'), async (
 
     const branchMap = Object.fromEntries(branchList.map((b) => [b.id, b]));
 
-    const enriched = (items: typeof originVolume, key: string) =>
+    const enriched = (items: any[], key: string) =>
       items.map((item) => ({
         ...item,
-        branch: branchMap[(item as Record<string, string>)[key]] ?? null,
+        branch: branchMap[item[key]] ?? null,
       }));
 
     sendSuccess(res, {

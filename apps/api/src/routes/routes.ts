@@ -58,7 +58,7 @@ router.get('/', authenticate, async (req, res, next) => {
 router.get('/:id', authenticate, async (req, res, next) => {
   try {
     const route = await prisma.route.findUnique({
-      where: { id: req.params.id },
+      where: { id: req.params.id as string },
       include: {
         originBranch: true,
         destinationBranch: true,
@@ -131,7 +131,7 @@ router.post('/', authenticate, authorize('ADMIN', 'OPS_MANAGER'), validateBody(c
 router.put('/:id', authenticate, authorize('ADMIN', 'OPS_MANAGER'), validateBody(updateRouteSchema), async (req, res, next) => {
   try {
     const route = await prisma.route.update({
-      where: { id: req.params.id },
+      where: { id: req.params.id as string },
       data: req.body,
     });
     sendSuccess(res, route, 200, 'Route updated');
@@ -147,7 +147,7 @@ router.put('/:id', authenticate, authorize('ADMIN', 'OPS_MANAGER'), validateBody
 router.delete('/:id', authenticate, authorize('ADMIN'), async (req, res, next) => {
   try {
     await prisma.route.update({
-      where: { id: req.params.id },
+      where: { id: req.params.id as string },
       data: { isActive: false },
     });
     sendSuccess(res, null, 200, 'Route deactivated');

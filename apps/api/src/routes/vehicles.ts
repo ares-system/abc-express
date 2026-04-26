@@ -60,7 +60,7 @@ router.get('/', authenticate, async (req, res, next) => {
 router.get('/:id', authenticate, async (req, res, next) => {
   try {
     const vehicle = await prisma.vehicle.findUnique({
-      where: { id: req.params.id },
+      where: { id: req.params.id as string },
       include: {
         currentBranch: { select: { id: true, code: true, name: true, city: true } },
       },
@@ -100,7 +100,7 @@ router.post('/', authenticate, authorize('ADMIN', 'OPS_MANAGER'), validateBody(c
 router.put('/:id', authenticate, authorize('ADMIN', 'OPS_MANAGER', 'DISPATCHER'), validateBody(updateVehicleSchema), async (req, res, next) => {
   try {
     const vehicle = await prisma.vehicle.update({
-      where: { id: req.params.id },
+      where: { id: req.params.id as string },
       data: req.body,
       include: {
         currentBranch: { select: { id: true, code: true, name: true } },
@@ -117,7 +117,7 @@ router.put('/:id', authenticate, authorize('ADMIN', 'OPS_MANAGER', 'DISPATCHER')
  */
 router.delete('/:id', authenticate, authorize('ADMIN'), async (req, res, next) => {
   try {
-    await prisma.vehicle.delete({ where: { id: req.params.id } });
+    await prisma.vehicle.delete({ where: { id: req.params.id as string } });
     sendSuccess(res, null, 200, 'Vehicle deleted');
   } catch (err) {
     next(err);

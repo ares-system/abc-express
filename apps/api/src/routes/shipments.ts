@@ -138,7 +138,7 @@ router.get('/', authenticate, async (req, res, next) => {
 router.get('/:id', authenticate, async (req, res, next) => {
   try {
     const shipment = await prisma.shipment.findUnique({
-      where: { id: req.params.id },
+      where: { id: req.params.id as string },
       include: {
         client: { select: { id: true, code: true, name: true, type: true, companyName: true, phone: true } },
         originBranch: true,
@@ -261,7 +261,7 @@ router.put('/:id/status', authenticate, authorize('ADMIN', 'OPS_MANAGER', 'DISPA
     const { status, description, branchId } = req.body;
 
     const current = await prisma.shipment.findUnique({
-      where: { id: req.params.id },
+      where: { id: req.params.id as string },
       select: { id: true, status: true, destinationBranchId: true },
     });
 
@@ -299,7 +299,7 @@ router.put('/:id/status', authenticate, authorize('ADMIN', 'OPS_MANAGER', 'DISPA
     }
 
     const shipment = await prisma.shipment.update({
-      where: { id: req.params.id },
+      where: { id: req.params.id as string },
       data: updateData,
     });
 
@@ -327,7 +327,7 @@ router.put('/:id/status', authenticate, authorize('ADMIN', 'OPS_MANAGER', 'DISPA
 router.get('/:id/events', authenticate, async (req, res, next) => {
   try {
     const events = await prisma.shipmentEvent.findMany({
-      where: { shipmentId: req.params.id },
+      where: { shipmentId: req.params.id as string },
       orderBy: { timestamp: 'asc' },
       include: {
         branch: { select: { code: true, name: true, city: true } },
@@ -347,7 +347,7 @@ router.get('/:id/events', authenticate, async (req, res, next) => {
 router.delete('/:id', authenticate, authorize('ADMIN', 'OPS_MANAGER'), async (req, res, next) => {
   try {
     const shipment = await prisma.shipment.findUnique({
-      where: { id: req.params.id },
+      where: { id: req.params.id as string },
       select: { status: true },
     });
 
@@ -362,7 +362,7 @@ router.delete('/:id', authenticate, authorize('ADMIN', 'OPS_MANAGER'), async (re
     }
 
     await prisma.shipment.update({
-      where: { id: req.params.id },
+      where: { id: req.params.id as string },
       data: { status: 'CANCELLED' },
     });
 

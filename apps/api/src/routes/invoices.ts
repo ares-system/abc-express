@@ -85,7 +85,7 @@ router.get('/', authenticate, authorize('ADMIN', 'FINANCE_MANAGER', 'OPS_MANAGER
 router.get('/:id', authenticate, authorize('ADMIN', 'FINANCE_MANAGER', 'OPS_MANAGER'), async (req, res, next) => {
   try {
     const invoice = await prisma.invoice.findUnique({
-      where: { id: req.params.id },
+      where: { id: req.params.id as string },
       include: {
         client: true,
         shipment: {
@@ -145,7 +145,7 @@ router.put('/:id/status', authenticate, authorize('ADMIN', 'FINANCE_MANAGER'), v
     const { status, paidAmount, paidDate } = req.body;
 
     const current = await prisma.invoice.findUnique({
-      where: { id: req.params.id },
+      where: { id: req.params.id as string },
       select: { id: true, status: true, totalAmount: true },
     });
 
@@ -162,7 +162,7 @@ router.put('/:id/status', authenticate, authorize('ADMIN', 'FINANCE_MANAGER'), v
     }
 
     const invoice = await prisma.invoice.update({
-      where: { id: req.params.id },
+      where: { id: req.params.id as string },
       data: updateData,
     });
 

@@ -141,6 +141,18 @@ const LoginPage = () => {
               seed script.
             </p>
           </div>
+
+          <div className="mt-8 text-center border-t border-surface-200 pt-6">
+            <p className="text-sm text-surface-500 mb-4">Are you a customer?</p>
+            <Button 
+              variant="outline" 
+              className="w-full"
+              onClick={() => router.push('/track')}
+              type="button"
+            >
+              Track a Shipment
+            </Button>
+          </div>
         </div>
       </div>
     </div>

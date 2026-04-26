@@ -55,6 +55,7 @@ import dashboardRoutes from './routes/dashboard.js';
 import ontologyRoutes from './routes/ontology.js';
 import jobRoutes from './routes/jobs.js';
 import deepAgentRoutes from './routes/deepAgent.js';
+import trackingRoutes from './routes/tracking.js';
 
 /** In-memory Redis subset for division rate limits when no Redis client is wired. */
 function createInMemoryRateLimitRedis(): RateLimiterDeps['redis'] {
@@ -172,7 +173,8 @@ const bootstrap = async () => {
     if (masterKey) {
       const encryptor = new FieldEncryptor({ masterKey });
       const encryptionMiddleware = createEncryptionMiddleware(encryptor);
-      prisma.$use(encryptionMiddleware);
+      // Hack for Prisma v6 middleware compatibility (extensions are preferred but for now we cast to any)
+      (prisma as any).$use(encryptionMiddleware);
       logger.info(
         '[security] AES-256-GCM field encryption enabled for shipment PII',
       );
@@ -192,7 +194,7 @@ const bootstrap = async () => {
       caPath: config.tls.caPath || undefined,
     });
     server = https.createServer(tlsResult.tlsOptions, app);
-    const stopReload = tlsResult.startReload();
+    const stopReload = tlsResult.startReloader();
     // Store cleanup fn for graceful shutdown
     (server as any).__tlsCleanup = stopReload;
     logger.info('[security] TLS 1.3 enabled with cert hot-reload');
@@ -302,8 +304,8 @@ const bootstrap = async () => {
   if (jwtService) {
     app.get('/.well-known/jwks.json', async (_req, res) => {
       try {
-        const jwks = await jwtService!.exportJWKS();
-        res.json(jwks);
+        const jwk = await jwtService!.exportPublicJwk();
+        res.json({ keys: [jwk] });
       } catch (err) {
         res.status(500).json({ error: 'Failed to export JWKS' });
       }
@@ -325,6 +327,7 @@ const bootstrap = async () => {
   app.use('/api/ontology', ontologyRoutes);
   app.use('/api/jobs', jobRoutes);
   app.use('/api/ai/deep-agent', deepAgentRoutes);
+  app.use('/api/track', trackingRoutes);
 
   // ─── 11. Error handling ─────────────────────────────────
   app.use(notFoundHandler);

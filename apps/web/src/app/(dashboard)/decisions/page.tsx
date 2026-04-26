@@ -37,6 +37,7 @@ import {
   Zap,
   BarChart3,
   Eye,
+  Package,
 } from 'lucide-react';
 
 // ─── Types ──────────────────────────────────────────────────
@@ -116,6 +117,7 @@ const TYPE_ICONS: Record<string, typeof Brain> = {
   COST_OPTIMIZATION: BarChart3,
   DEMAND_FORECAST: TrendingUp,
   EXCEPTION_HANDLING: AlertTriangle,
+  LOAD_CONSOLIDATION: Package,
 };
 
 // ─── Page ───────────────────────────────────────────────────

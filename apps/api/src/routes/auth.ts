@@ -5,7 +5,7 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@abc/db';
-import { JwtEs256Service } from '../../packages/security/src/jwt-es256.js';
+import { JwtEs256Service } from '@abc/security';
 import { validateBody } from '../middleware/validate.js';
 import { authenticate, generateToken, generateRefreshToken } from '../middleware/auth.js';
 import { loginSchema, refreshTokenSchema } from '../schemas.js';

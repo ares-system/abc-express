@@ -467,6 +467,7 @@ enum DecisionType {
   ESCALATION
   COST_OPTIMIZATION
   CAPACITY_PLANNING
+  LOAD_CONSOLIDATION
 }
 
 enum DecisionStatus {

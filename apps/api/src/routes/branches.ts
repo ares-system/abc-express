@@ -54,14 +54,14 @@ router.get('/', authenticate, async (req, res, next) => {
 router.get('/:id', authenticate, async (req, res, next) => {
   try {
     const branch = await prisma.branch.findUnique({
-      where: { id: req.params.id },
+      where: { id: req.params.id as string },
       include: {
         users: { select: { id: true, name: true, email: true, role: true } },
         vehicles: { select: { id: true, plateNumber: true, type: true, status: true } },
         _count: {
           select: {
             originShipments: true,
-            destinationShipments: true,
+            destShipments: true,
             currentShipments: true,
           },
         },
@@ -97,7 +97,7 @@ router.post('/', authenticate, authorize('ADMIN'), validateBody(createBranchSche
 router.put('/:id', authenticate, authorize('ADMIN', 'OPS_MANAGER'), validateBody(updateBranchSchema), async (req, res, next) => {
   try {
     const branch = await prisma.branch.update({
-      where: { id: req.params.id },
+      where: { id: req.params.id as string },
       data: req.body,
     });
     sendSuccess(res, branch, 200, 'Branch updated');
@@ -111,7 +111,7 @@ router.put('/:id', authenticate, authorize('ADMIN', 'OPS_MANAGER'), validateBody
  */
 router.delete('/:id', authenticate, authorize('ADMIN'), async (req, res, next) => {
   try {
-    await prisma.branch.delete({ where: { id: req.params.id } });
+    await prisma.branch.delete({ where: { id: req.params.id as string } });
     sendSuccess(res, null, 200, 'Branch deleted');
   } catch (err) {
     next(err);

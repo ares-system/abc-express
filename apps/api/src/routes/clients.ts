@@ -51,7 +51,7 @@ router.get('/', authenticate, async (req, res, next) => {
 router.get('/:id', authenticate, async (req, res, next) => {
   try {
     const client = await prisma.client.findUnique({
-      where: { id: req.params.id },
+      where: { id: req.params.id as string },
       include: {
         _count: { select: { shipments: true, invoices: true } },
       },
@@ -76,7 +76,7 @@ router.get('/:id/shipments', authenticate, async (req, res, next) => {
   try {
     const { page, limit, skip } = parsePagination(req.query);
 
-    const where = { clientId: req.params.id };
+    const where = { clientId: req.params.id as string };
     const [shipments, total] = await Promise.all([
       prisma.shipment.findMany({
         where,
@@ -113,7 +113,7 @@ router.get('/:id/invoices', authenticate, async (req, res, next) => {
   try {
     const { page, limit, skip } = parsePagination(req.query);
 
-    const where: Record<string, unknown> = { clientId: req.params.id };
+    const where: Record<string, unknown> = { clientId: req.params.id as string };
     if (req.query.status) where.status = String(req.query.status);
 
     const [invoices, total] = await Promise.all([
@@ -151,7 +151,7 @@ router.post('/', authenticate, authorize('ADMIN', 'OPS_MANAGER', 'BRANCH_STAFF')
 router.put('/:id', authenticate, authorize('ADMIN', 'OPS_MANAGER', 'BRANCH_STAFF'), validateBody(updateClientSchema), async (req, res, next) => {
   try {
     const client = await prisma.client.update({
-      where: { id: req.params.id },
+      where: { id: req.params.id as string },
       data: req.body,
     });
     sendSuccess(res, client, 200, 'Client updated');
@@ -165,7 +165,7 @@ router.put('/:id', authenticate, authorize('ADMIN', 'OPS_MANAGER', 'BRANCH_STAFF
  */
 router.delete('/:id', authenticate, authorize('ADMIN'), async (req, res, next) => {
   try {
-    await prisma.client.delete({ where: { id: req.params.id } });
+    await prisma.client.delete({ where: { id: req.params.id as string } });
     sendSuccess(res, null, 200, 'Client deleted');
   } catch (err) {
     next(err);
